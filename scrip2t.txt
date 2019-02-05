@@ -1,0 +1,21 @@
+##This should clear the NVRAM fmm key:
+
+$/usr/sbin/nvram -d fmm-mobileme-token-FMM
+
+##But i think the Mac will need a restart for it to take affect.
+##In my imaging workflow I run the below to clear NVRAM:
+
+$/usr/sbin/nvram -c
+
+
+For reference purposes if you want to disable FMM without requiring a reboot the following works in 10.13.2. Removing the fmm-computer-name and restarting the FindMyMacd process were not 100% required however since they are all related better safe (plus I didn't test anything older than 10.13.
+
+#!/bin/sh
+nvram -d fmm-computer-name
+nvram -d fmm-mobileme-token-FMM
+killall -HUP findmydeviced
+killall -HUP FindMyMacd
+
+
+####  http://ilostmynotes.blogspot.com/2013/11/disable-find-my-mac-by-modifiying-nvram.html
+https://clburlison.com/find-my-mac/

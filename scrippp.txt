@@ -1,0 +1,88 @@
+`When Find My Mac (FMM) is enabled, it writes information into the Mac's nvram. This enables the configuration to persist across OS-level changes, including a full system re-image. This is great if it's been stolen and you want to track it, but not so great if you bought a second hand mac, or your employer gave you a repurposed mac. The previous owner will be able to track the mac's location and even issue a remote wipe. 
+
+Apple advises you to disable FMM when handing over ownership. That's fine if you have the owner's cooperation, but it's more problematic if the owner was some guy on craig's list, or last summer's intern who is now building water wells in Kenya. So we need a way to programmatically disable the functionality.
+
+The relevant nvram variables are shown below. fmm-computer-name is just a base64 encoded string of the computer's host name.
+$ nvram -x -p
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+[snip]
+      <key>fmm-computer-name</key>
+      <data>
+      bXljb21wdXRlcm5hbWU=
+      </data>
+      <key>fmm-mobileme-token-FMM</key>
+      <data>
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      </data>
+###The fmm-mobileme-token-FMM data is a base64-encoded binary plist that holds the FMM configuration. The purpose seems pretty obvious, it will beacon to https://p08-fmip.icloud.com with the authToken, AppleID, and other machine metadata. The person ID and username in the plist correspond to the Apple ID account that registered with FMM. Values changed here to protect the innocent :)
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+        <key>authToken</key>
+        <string>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~</string>
+        <key>dataclassProperties</key>
+        <dict>
+                <key>com.apple.Dataclass.DeviceLocator</key>
+                <dict>
+                        <key>apsEnv</key>
+                        <string>Production</string>
+                        <key>authMechanism</key>
+                        <string>token</string>
+                        <key>hostname</key>
+                        <string>p08-fmip.icloud.com</string>
+                        <key>scheme</key>
+                        <string>https</string>
+                </dict>
+        </dict>
+        <key>enabledDataclasses</key>
+        <array>
+                <string>com.apple.Dataclass.DeviceLocator</string>
+        </array>
+        <key>personID</key>
+        <string>1111111111</string>
+        <key>userInfo</key>
+        <dict>
+                <key>InUseOwnerDisplayName</key>
+                <string>A User Name</string>
+        </dict>
+        <key>userid</key>
+        <integer>502</integer>
+        <key>username</key>
+        <string>myappleidusername@gmail.com</string>
+</dict>
+</plist>
+
+###The solution is just to kill the nvram variables:
+$nvram -d fmm-computer-name
+$nvram -d fmm-mobileme-token-FMM
+#####And in fact, you should probably just clear everything during your re-imaging process:
+#nvram -c
+#######Probably unnecessary but you could also disable the LaunchDaemon which lives here:
+
+$$/System/Library/LaunchDaemons/com.apple.findmymac.plist
+
+####Or just check that the disable is active in /var/db/launchd.db/com.apple.launchd/overrides.plist:
+
+
+ $$       <key>com.apple.findmymacd</key>
+        <dict>
+                <key>Disabled</key>
+                <true/>
+        </dict>
+        <key>com.apple.findmymacmessenger</key>
+        <dict>
+                <key>Disabled</key>
+                <true/>
+        </dict>

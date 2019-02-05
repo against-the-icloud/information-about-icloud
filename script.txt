@@ -1,0 +1,8 @@
+##This should clear the NVRAM fmm key:
+
+$/usr/sbin/nvram -d fmm-mobileme-token-FMM
+
+##But i think the Mac will need a restart for it to take affect.
+##In my imaging workflow I run the below to clear NVRAM:
+
+$/usr/sbin/nvram -c
